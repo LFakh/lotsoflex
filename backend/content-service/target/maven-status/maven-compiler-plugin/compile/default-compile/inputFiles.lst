@@ -1,0 +1,10 @@
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/service/ImageService.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/ContentServiceApplication.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/config/WebClientConfig.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/config/RedisConfig.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/model/Movie.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/repository/MovieRepository.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/service/TmdbService.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/controller/MovieController.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/model/Genre.java
+/home/fun/Desktop/fullstack/backend/backend/content-service/src/main/java/com/example/contentservice/repository/GenreRepository.java

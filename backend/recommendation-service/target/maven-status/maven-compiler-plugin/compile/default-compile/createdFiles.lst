@@ -1,0 +1,7 @@
+com/example/recommendationservice/model/UserActivity$ActivityType.class
+com/example/recommendationservice/service/RecommendationService.class
+com/example/recommendationservice/RecommendationServiceApplication.class
+com/example/recommendationservice/model/UserActivity$UserActivityBuilder.class
+com/example/recommendationservice/model/UserActivity.class
+com/example/recommendationservice/repository/UserActivityRepository.class
+com/example/recommendationservice/controller/RecommendationController.class
