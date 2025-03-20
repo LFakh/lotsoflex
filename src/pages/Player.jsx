@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { fetchMovieDetails, fetchTvDetails } from '../services/tmdbApi';
-import { FaArrowLeft } from 'react-icons/fa';
+import { IoArrowBack } from 'react-icons/io5';
 
 const PlayerContainer = styled.div`
   position: fixed;
@@ -10,15 +10,16 @@ const PlayerContainer = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: black;
-  z-index: 1000;
+  background-color: #141414;
+  color: white;
+  overflow-y: auto;
 `;
 
 const BackButton = styled.button`
-  position: absolute;
+  position: fixed;
   top: 20px;
   left: 20px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
   border-radius: 50%;
@@ -28,80 +29,109 @@ const BackButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 100;
+  transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
   }
 `;
 
-const VideoContainer = styled.div`
-  width: 100%;
-  height: 100%; /* Adjust height to allow space for streaming providers */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  background-image: ${props => props.backdrop ? `url("https://image.tmdb.org/t/p/original/${props.backdrop}")` : 'none'};
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  
-  &:after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-  }
+const ContentWrapper = styled.div`
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-top: 80px;
 `;
 
-const PlaceholderContent = styled.div`
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  padding: 0 20px;
-`;
-
-const PlaceholderTitle = styled.h2`
+const Title = styled.h1`
   font-size: 2rem;
   margin-bottom: 20px;
-  
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
-`;
-
-const PlaceholderText = styled.p`
-  font-size: 1.2rem;
-  max-width: 600px;
-  margin-bottom: 20px;
-  
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-`;
-
-const StreamingProviders = styled.div`
-  margin-top: 20px;
-  color: white;
   text-align: center;
-  z-index: 1; /* Ensure it appears above the background */
-  padding: 69px; /* Add padding for better spacing */
+`;
+
+const VideoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-bottom: 30px;
+  
+  @media (min-width: 1200px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const VideoSection = styled.div`
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const VideoTitle = styled.h2`
+  font-size: 1.2rem;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  margin: 0;
+`;
+
+const VideoWrapper = styled.div`
+  position: relative;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+`;
+
+const StyledIframe = styled.iframe`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+`;
+
+const ProvidersSection = styled.div`
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+`;
+
+const ProvidersTitle = styled.h2`
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  text-align: center;
+`;
+
+const ProvidersGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 20px;
+  justify-items: center;
 `;
 
 const Provider = styled.div`
-  display: inline-block;
-  margin: 0 10px;
   text-align: center;
+`;
+
+const ProviderLink = styled.a`
+  display: block;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
 `;
 
 const ProviderLogo = styled.img`
   width: 50px;
   height: 50px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+`;
+
+const ProviderName = styled.p`
+  font-size: 0.9rem;
+  color: #ccc;
 `;
 
 function Player() {
@@ -110,6 +140,7 @@ function Player() {
   const [content, setContent] = useState(null);
   const [videoKey, setVideoKey] = useState(null);
   const [streamingProviders, setStreamingProviders] = useState([]);
+  const [streamingUrl, setStreamingUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,16 +150,17 @@ function Player() {
         // Try fetching as movie first
         const movieResponse = await fetchMovieDetails(id);
         setContent(movieResponse.data);
-        fetchVideo(movieResponse.data.id); // Fetch video for the movie
-        fetchStreamingProviders(movieResponse.data.id); // Fetch streaming providers
+        fetchVideo(movieResponse.data.id);
+        fetchStreamingProviders(movieResponse.data.id);
+        setStreamingUrl(`https://vidsrc.dev/embed/movie/${movieResponse.data.id}`);
       } catch (movieError) {
-        console.error("Error fetching movie details:", movieError);
         try {
           // If movie fetch fails, try as TV show
           const tvResponse = await fetchTvDetails(id);
           setContent(tvResponse.data);
-          fetchVideo(tvResponse.data.id); // Fetch video for the TV show
-          fetchStreamingProviders(tvResponse.data.id); // Fetch streaming providers
+          fetchVideo(tvResponse.data.id);
+          fetchStreamingProviders(tvResponse.data.id);
+          setStreamingUrl(`https://vidsrc.dev/embed/tv/${tvResponse.data.id}`);
         } catch (tvError) {
           console.error("Could not find content details:", tvError);
         }
@@ -137,94 +169,112 @@ function Player() {
       }
     }
 
-    const fetchVideo = async (contentId) => {
+    async function fetchVideo(contentId) {
       try {
-        const videoResponse = await fetch(`https://api.themoviedb.org/3/movie/${contentId}/videos?api_key=${import.meta.env.VITE_TMDB_API_KEY}`);
-        const videos = await videoResponse.json();
-        if (videos.results.length > 0) {
-          setVideoKey(videos.results[0].key); // Get the first video key
+        const response = await fetch(
+          `https://api.themoviedb.org/3/movie/${contentId}/videos?api_key=${import.meta.env.VITE_TMDB_API_KEY}`
+        );
+        const data = await response.json();
+        if (data.results?.length > 0) {
+          setVideoKey(data.results[0].key);
         }
       } catch (error) {
-        console.error("Could not fetch video details", error);
+        console.error("Error fetching video:", error);
       }
-    };
+    }
 
-    const fetchStreamingProviders = async (contentId) => {
+    async function fetchStreamingProviders(contentId) {
       try {
-        const providerResponse = await fetch(`https://api.themoviedb.org/3/movie/${contentId}/watch/providers?api_key=${import.meta.env.VITE_TMDB_API_KEY}`);
-        const providers = await providerResponse.json();
-        console.log("Streaming Providers Response:", providers); // Debugging log
-        const usProviders = providers.results.US; // Get US providers
-        if (usProviders) {
-          setStreamingProviders(usProviders.flatrate || []); // Set flatrate providers
+        const response = await fetch(
+          `https://api.themoviedb.org/3/movie/${contentId}/watch/providers?api_key=${import.meta.env.VITE_TMDB_API_KEY}`
+        );
+        const data = await response.json();
+        if (data.results?.US?.flatrate) {
+          setStreamingProviders(data.results.US.flatrate);
         }
       } catch (error) {
-        console.error("Could not fetch streaming providers", error);
+        console.error("Error fetching providers:", error);
       }
-    };
+    }
 
     fetchContent();
   }, [id]);
 
-  const handleBack = () => {
-    navigate(-1);
-  };
-
   if (loading) {
     return (
       <PlayerContainer>
-        <BackButton onClick={handleBack}>
-          <FaArrowLeft />
+        <BackButton onClick={() => navigate(-1)}>
+          <IoArrowBack size={24} />
         </BackButton>
-        <VideoContainer>
-          <PlaceholderContent>Loading...</PlaceholderContent>
-        </VideoContainer>
+        <ContentWrapper>
+          <Title>Loading...</Title>
+        </ContentWrapper>
       </PlayerContainer>
     );
   }
 
   return (
     <PlayerContainer>
-      <BackButton onClick={handleBack}>
-        <FaArrowLeft />
+      <BackButton onClick={() => navigate(-1)}>
+        <IoArrowBack size={24} />
       </BackButton>
       
-      <VideoContainer backdrop={content?.backdrop_path}>
-        <PlaceholderContent>
-          <PlaceholderTitle>
-            {content?.title || content?.name || "Video Player"}
-          </PlaceholderTitle>
-          {videoKey ? (
-            <iframe
-              width="100%"
-              height="100%"
-              src={`https://www.youtube.com/embed/${videoKey}`}
-              title="Video Player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-          ) : (
-            <PlaceholderText>
-              No video available.
-            </PlaceholderText>
-          )}
-        </PlaceholderContent>
+      <ContentWrapper>
+        <Title>{content?.title || content?.name}</Title>
         
-        <StreamingProviders>
-          <h3>Available on:</h3>
-          {streamingProviders.length > 0 ? (
-            streamingProviders.map(provider => (
-              <Provider key={provider.provider_id}>
-                <ProviderLogo src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`} alt={provider.provider_name} />
-                <p>{provider.provider_name}</p>
-              </Provider>
-            ))
-          ) : (
-            <PlaceholderText>No streaming providers available.</PlaceholderText>
+        <VideoGrid>
+          {streamingUrl && (
+            <VideoSection>
+              <VideoTitle>Full Movie</VideoTitle>
+              <VideoWrapper>
+                <StyledIframe
+                  src={streamingUrl}
+                  title="Movie Player"
+                  allow="fullscreen"
+                  allowFullScreen
+                />
+              </VideoWrapper>
+            </VideoSection>
           )}
-        </StreamingProviders>
-      </VideoContainer>
+          
+          {videoKey && (
+            <VideoSection>
+              <VideoTitle>Trailer</VideoTitle>
+              <VideoWrapper>
+                <StyledIframe
+                  src={`https://www.youtube.com/embed/${videoKey}`}
+                  title="Trailer"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </VideoWrapper>
+            </VideoSection>
+          )}
+        </VideoGrid>
+
+        {streamingProviders.length > 0 && (
+          <ProvidersSection>
+            <ProvidersTitle>Available on Streaming</ProvidersTitle>
+            <ProvidersGrid>
+              {streamingProviders.map(provider => (
+                <Provider key={provider.provider_id}>
+                  <ProviderLink 
+                    href={provider.provider_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <ProviderLogo
+                      src={`https://image.tmdb.org/t/p/w500${provider.logo_path}`}
+                      alt={provider.provider_name}
+                    />
+                    <ProviderName>{provider.provider_name}</ProviderName>
+                  </ProviderLink>
+                </Provider>
+              ))}
+            </ProvidersGrid>
+          </ProvidersSection>
+        )}
+      </ContentWrapper>
     </PlayerContainer>
   );
 }
